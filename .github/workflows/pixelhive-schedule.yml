@@ -1,5 +1,5 @@
 
-name: PixelHive Daily Editions Scheduler
+name: PixelHive Daily Editions
 
 on:
   schedule:
@@ -12,25 +12,147 @@ permissions:
   contents: read
 
 jobs:
-  check-schedule:
+  collect-news-leads:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Identify the edition
+      - name: Collect RSS headline leads
+        env:
+          SCHEDULE: ${{ github.event.schedule }}
         run: |
-          HOUR=$(TZ=Africa/Nairobi date +%H)
-          DATE=$(TZ=Africa/Nairobi date +%F)
+          cat > collect_news.py <<'PY'
+          import os
+          import urllib.request
+          import xml.etree.ElementTree as ET
+          from datetime import datetime, timezone
+          from email.utils import parsedate_to_datetime
+          from zoneinfo import ZoneInfo
+          from html import unescape
 
-          if [ "$HOUR" -ge 4 ] && [ "$HOUR" -lt 10 ]; then
-            EDITION="Morning Signal"
-          elif [ "$HOUR" -ge 10 ] && [ "$HOUR" -lt 16 ]; then
-            EDITION="Midday Pulse"
-          else
-            EDITION="Evening Wrap"
-          fi
+          TZ = ZoneInfo("Africa/Nairobi")
+          now = datetime.now(timezone.utc).astimezone(TZ)
+          schedule = os.environ.get("SCHEDULE", "")
 
-          echo "PixelHive schedule test"
-          echo "Kenya date: $DATE"
-          echo "Edition: $EDITION"
-          echo "Kenya time: $(TZ=Africa/Nairobi date +%H:%M)"
-          echo "This run checks the schedule only."
-          echo "No news has been collected or published."
+          if schedule == "7 2 * * *":
+              edition = "Morning Signal"
+          elif schedule == "7 10 * * *":
+              edition = "Midday Pulse"
+          elif schedule == "7 16 * * *":
+              edition = "Evening Wrap"
+          elif 4 <= now.hour < 10:
+              edition = "Morning Signal (manual test)"
+          elif 10 <= now.hour < 16:
+              edition = "Midday Pulse (manual test)"
+          else:
+              edition = "Evening Wrap (manual test)"
+
+          feeds = [
+              ("BBC News - Africa",
+               "https://feeds.bbci.co.uk/news/world/africa/rss.xml"),
+              ("BBC News - World",
+               "https://feeds.bbci.co.uk/news/world/rss.xml"),
+              ("BBC News - Technology",
+               "https://feeds.bbci.co.uk/news/technology/rss.xml"),
+          ]
+
+          def clean(text):
+              return " ".join(unescape(text or "").split())
+
+          def get_text(element, names):
+              for name in names:
+                  node = element.find(name)
+                  if node is not None and node.text:
+                      return clean(node.text)
+              return ""
+
+          lines = [
+              "# PixelHive editorial research draft",
+              "",
+              f"- Edition: {edition}",
+              f"- Generated: {now.strftime('%Y-%m-%d %H:%M EAT')}",
+              "- Status: UNREVIEWED — NOT PUBLISHED",
+              "",
+              "Check every story against its original source before use.",
+              "Do not copy full articles or treat a headline alone as verified.",
+              ""
+          ]
+
+          total = 0
+          for source, url in feeds:
+              lines.extend([f"## {source}", ""])
+              try:
+                  request = urllib.request.Request(
+                      url, headers={"User-Agent": "PixelHiveEditorialResearch/1.0"}
+                  )
+                  with urllib.request.urlopen(request, timeout=20) as response:
+                      root = ET.fromstring(response.read())
+
+                  items = root.findall(".//item")
+                  if not items:
+                      items = root.findall(
+                          ".//{http://www.w3.org/2005/Atom}entry"
+                      )
+
+                  if not items:
+                      lines.append("No readable feed items returned.")
+                      lines.append("")
+                      continue
+
+                  for item in items[:8]:
+                      title = get_text(item, ["title",
+                          "{http://www.w3.org/2005/Atom}title"])
+                      link = get_text(item, ["link"])
+                      if not link:
+                          link_node = item.find(
+                              "{http://www.w3.org/2005/Atom}link"
+                          )
+                          if link_node is not None:
+                              link = link_node.attrib.get("href", "")
+
+                      date_text = get_text(item, ["pubDate",
+                          "{http://www.w3.org/2005/Atom}updated",
+                          "{http://www.w3.org/2005/Atom}published"])
+                      if date_text:
+                          try:
+                              dt = parsedate_to_datetime(date_text)
+                              date_text = dt.strftime("%Y-%m-%d %H:%M UTC")
+                          except Exception:
+                              pass
+
+                      if title and link.startswith("https://"):
+                          lines.append(f"### {title}")
+                          lines.append(f"- Source: {source}")
+                          lines.append(f"- Published: {date_text or 'Date not provided'}")
+                          lines.append(f"- Original story: {link}")
+                          lines.append("- Editorial status: VERIFY BEFORE USE")
+                          lines.append("")
+                          total += 1
+
+              except Exception as error:
+                  lines.append(f"Feed could not be read: {type(error).__name__}")
+                  lines.append("")
+
+          lines.extend([
+              "---",
+              f"Total headline leads collected: {total}",
+              "",
+              "This file is a research aid, not a published news edition."
+          ])
+
+          with open("pixelhive-draft.md", "w", encoding="utf-8") as file:
+              file.write("\n".join(lines))
+
+          print(f"Edition: {edition}")
+          print(f"Headline leads collected: {total}")
+          print("Draft created. Nothing was published.")
+          PY
+
+          python collect_news.py
+
+      - name: Save draft for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: pixelhive-editorial-draft
+          path: pixelhive-draft.md
+          if-no-files-found: error
+          retention-days: 7
