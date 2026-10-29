@@ -1,0 +1,36 @@
+
+name: PixelHive Daily Editions Scheduler
+
+on:
+  schedule:
+    - cron: "7 2 * * *"
+    - cron: "7 10 * * *"
+    - cron: "7 16 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check-schedule:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Identify the edition
+        run: |
+          HOUR=$(TZ=Africa/Nairobi date +%H)
+          DATE=$(TZ=Africa/Nairobi date +%F)
+
+          if [ "$HOUR" -ge 4 ] && [ "$HOUR" -lt 10 ]; then
+            EDITION="Morning Signal"
+          elif [ "$HOUR" -ge 10 ] && [ "$HOUR" -lt 16 ]; then
+            EDITION="Midday Pulse"
+          else
+            EDITION="Evening Wrap"
+          fi
+
+          echo "PixelHive schedule test"
+          echo "Kenya date: $DATE"
+          echo "Edition: $EDITION"
+          echo "Kenya time: $(TZ=Africa/Nairobi date +%H:%M)"
+          echo "This run checks the schedule only."
+          echo "No news has been collected or published."
