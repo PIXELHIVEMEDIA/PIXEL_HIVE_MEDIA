@@ -1,0 +1,171 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#080b0a">
+<meta name="description" content="Explore every PixelHive Media story — Kenya, world, politics, business, sports, technology, entertainment and culture.">
+<title>All Stories | PixelHive Media</title>
+<style>
+:root{--bg:#080b0a;--panel:#101713;--panel2:#151e18;--white:#f5f7f4;--muted:#a8b2aa;--red:#ef3340;--green:#1fb56a;--mint:#70e7a7;--gold:#d9b76d;--line:rgba(255,255,255,.12)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--white);font-family:Arial,Helvetica,sans-serif;line-height:1.6}
+a{color:inherit;text-decoration:none}
+button,input{font:inherit}
+.wrap{width:min(1200px,calc(100% - 36px));margin:auto}
+.top-line{height:4px;background:linear-gradient(90deg,var(--bg) 0 18%,var(--red) 18% 38%,var(--white) 38% 58%,var(--green) 58% 82%,var(--gold) 82%)}
+header{position:sticky;top:0;z-index:10;background:rgba(8,11,10,.95);backdrop-filter:blur(15px);border-bottom:1px solid var(--line)}
+.nav{min-height:67px;display:flex;justify-content:space-between;align-items:center;gap:18px}
+.brand{font-weight:900;letter-spacing:.5px;white-space:nowrap}.brand span{color:var(--mint)}
+.nav-links{display:flex;gap:18px;flex-wrap:wrap;color:var(--muted);font-size:.8rem}
+.nav-links a:hover{color:var(--mint)}
+.hero{padding:55px 0 35px;background:radial-gradient(ellipse at 90% 0,rgba(31,181,106,.16),transparent 42%),radial-gradient(ellipse at 0 100%,rgba(239,51,64,.07),transparent 38%)}
+.eyebrow{color:var(--mint);font-size:.69rem;font-weight:900;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px}
+h1{font-size:clamp(2.5rem,6vw,4.4rem);line-height:1.05;letter-spacing:-2px;margin-bottom:15px}
+.accent{color:var(--mint)}
+.hero p{max-width:720px;color:var(--muted);font-size:.94rem}
+.stats{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+.stat{padding:9px 12px;border:1px solid var(--line);border-radius:7px;background:var(--panel);font-size:.76rem;color:#d0d9d1}
+.stat strong{color:var(--mint)}
+main{padding:24px 0 65px}
+.search-wrap{position:relative}
+.search-icon{position:absolute;left:15px;top:50%;transform:translateY(-50%);font-size:1.1rem;color:var(--mint);pointer-events:none}
+#search{width:100%;padding:15px 15px 15px 44px;background:var(--panel);border:1px solid var(--line);border-radius:9px;color:var(--white);outline:none}
+#search:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(31,181,106,.1)}
+#search::placeholder{color:#859087}
+.filter-box{margin-top:20px;padding:16px;background:var(--panel);border:1px solid var(--line);border-radius:11px}
+.filter-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:13px}
+.filter-heading h2{font-size:.81rem;letter-spacing:1.2px;text-transform:uppercase}
+.filter-heading span{font-size:.71rem;color:var(--muted)}
+.filters{display:flex;gap:8px;overflow-x:auto;padding:0 0 6px;scrollbar-width:thin;scrollbar-color:#31533d var(--panel);-webkit-overflow-scrolling:touch}
+.filter-btn{flex:0 0 auto;padding:9px 13px;background:#0b100d;color:#c8d1ca;border:1px solid var(--line);border-radius:999px;font-size:.78rem;white-space:nowrap;cursor:pointer}
+.filter-btn:hover{border-color:var(--green)}
+.filter-btn.active{background:var(--green);border-color:var(--green);color:#061009;font-weight:900}
+.results-head{display:flex;justify-content:space-between;align-items:end;gap:12px;flex-wrap:wrap;margin:30px 0 17px}
+.results-head h2{font-size:1.45rem}
+#count{color:var(--muted);font-size:.8rem}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:17px}
+.card{min-width:0;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;transition:transform .2s,border-color .2s}
+.card:hover{transform:translateY(-3px);border-color:rgba(112,231,167,.5)}
+.photo{position:relative;height:210px;overflow:hidden;background:linear-gradient(135deg,#18271c,#090d0a)}
+.photo img{width:100%;height:100%;object-fit:cover;filter:contrast(1.06) saturate(.94);transition:transform .4s}
+.card:hover .photo img{transform:scale(1.045)}
+.photo:after{content:"";position:absolute;inset:40% 0 0;background:linear-gradient(0deg,rgba(0,0,0,.72),transparent);pointer-events:none}
+.photo-stamp{position:absolute;left:12px;bottom:10px;z-index:1;font-size:.55rem;font-weight:900;letter-spacing:1.4px;text-shadow:0 2px 5px #000}
+.body{padding:16px;display:flex;flex-direction:column;flex:1}
+.category{color:var(--mint);font-size:.65rem;font-weight:900;letter-spacing:1.1px;text-transform:uppercase;margin-bottom:8px}
+.card h3{font-size:1rem;line-height:1.4;margin-bottom:9px;overflow-wrap:anywhere}
+.card h3 a:hover{color:var(--mint)}
+.summary{color:var(--muted);font-size:.81rem;margin-bottom:16px;overflow-wrap:anywhere}
+.meta{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-top:auto;padding-top:12px;border-top:1px solid var(--line);font-size:.69rem;color:var(--muted)}
+.read{color:var(--white);font-weight:900;white-space:nowrap}.read:hover{color:var(--mint)}
+.empty,.error{display:none;padding:30px 18px;margin-top:16px;text-align:center;background:var(--panel);border:1px solid var(--line);border-radius:11px}
+.empty p,.error p{color:var(--muted);margin:8px 0 15px}
+.reset{background:var(--green);color:#061009;font-weight:900;border:0;border-radius:7px;padding:10px 14px}
+.editor-note{font-size:.73rem;color:#859087;margin-top:22px}
+.cta{margin-top:37px;padding:24px;border:1px solid rgba(217,183,109,.25);border-radius:12px;background:linear-gradient(110deg,rgba(31,181,106,.08),transparent 65%),var(--panel);display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap}
+.cta h2{font-size:1.15rem}.cta p{color:var(--muted);font-size:.82rem;margin-top:4px}
+.home-btn{display:inline-block;background:var(--green);color:#061009;font-weight:900;padding:10px 14px;border-radius:7px;font-size:.82rem}
+footer{padding:25px 0;border-top:1px solid var(--line);color:var(--muted);font-size:.78rem}
+.footer-inner{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+footer strong{color:var(--white)}
+@media(max-width:900px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:580px){.wrap{width:calc(100% - 28px)}.nav{align-items:flex-start;flex-direction:column;padding:12px 0}.nav-links{gap:13px}.hero{padding-top:38px}h1{letter-spacing:-1px}.filter-box{padding:12px}.grid{grid-template-columns:1fr}.photo{height:230px}.cta{padding:18px}}
+</style>
+</head>
+<body>
+<div class="top-line"></div>
+<header><nav class="wrap nav"><a class="brand" href="./index.html">🐝 PIXEL<span>HIVE</span> MEDIA</a><div class="nav-links"><a href="./index.html">Home</a><a href="./index.html#desks">Our Desks</a><a href="./index.html#latest-stories">Latest Stories</a><a href="./index.html#hiveclips">HiveClips</a></div></nav></header>
+
+<section class="hero"><div class="wrap"><div class="eyebrow">🐝 Welcome to the Hive Library</div><h1>Find your next<br><span class="accent">“Wait, what?!”</span></h1><p>🇰🇪 Kenya. 🌍 The world. 💸 Business. 🏛️ Politics. ⚽ Sports. 🤖 Tech. 🎤 Entertainment and creator culture. Search, filter and explore stories made for curious minds.</p><div class="stats"><div class="stat"><strong id="total">—</strong> stories in the library</div><div class="stat">🔎 Instant search</div><div class="stat">✨ Browse by topic</div></div></div></section>
+
+<main class="wrap">
+<div class="search-wrap"><span class="search-icon">⌕</span><input id="search" type="search" placeholder="Search stories, topics or headlines…" aria-label="Search stories" autocomplete="off"></div>
+<section class="filter-box" aria-label="Filter stories by category"><div class="filter-heading"><h2>Explore by category</h2><span>← Swipe to see all →</span></div><div id="filters" class="filters"><button class="filter-btn active" type="button" data-category="all">🐝 All Stories</button></div></section>
+<div class="results-head"><h2 id="heading">All Stories</h2><div id="count">Loading the Hive library…</div></div>
+<div id="grid" class="grid"></div>
+<div id="empty" class="empty"><h3>Nothing found 🧐</h3><p>Try another keyword or choose a different category.</p><button id="reset" class="reset" type="button">Show all stories</button></div>
+<div id="error" class="error"><h3>We couldn't load the stories.</h3><p>Make sure stories.js is saved in the same repository as this page.</p></div>
+<p class="editor-note">📝 Editorial standard: verify facts, dates, quotes and claims before publication. Illustrative images must not be presented as photographs of a specific event.</p>
+<section class="cta"><div><h2>Stay curious. Stay connected. 🐝</h2><p>Return to the homepage to explore the PixelHive vision and HiveClips.</p></div><a class="home-btn" href="./index.html">Back to homepage ↗</a></section>
+</main>
+
+<footer><div class="wrap footer-inner"><p><strong>🐝 PIXELHIVE MEDIA 🇰🇪</strong> — Stories · Signals · Future</p><p>© <span id="year"></span> PixelHive Media.</p></div></footer>
+
+<script src="./stories.js"></script>
+<script>
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
+let selected="all",term="";
+$("year").textContent=new Date().getFullYear();
+function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function getStories(){return Array.isArray(window.PIXELHIVE_STORIES)?window.PIXELHIVE_STORIES.filter(s=>s&&s.id&&s.title):null}
+function cat(s){return String(s.category||"General").trim()||"General"}
+function imageURL(v){return typeof v==="string"&&/^(https?:\/\/|\.\/|\.\.\/|\/)/i.test(v.trim())?v.trim():""}
+function buildFilters(stories){
+ const categories=[...new Set(stories.map(cat))].sort((a,b)=>a.localeCompare(b));
+ const icons={Kenya:"🇰🇪",World:"🌍",Business:"💸",Politics:"🏛️",Sports:"⚽",Technology:"🤖",Entertainment:"🎤",Education:"🎓",Culture:"🎬",Lifestyle:"💬",Gaming:"🎮",Society:"👥",Health:"🩺",Science:"🔬",Environment:"🌱",Breaking:"🚨"};
+ $("filters").innerHTML='<button class="filter-btn" type="button" data-category="all">🐝 All Stories</button>';
+ categories.forEach(category=>{
+  const b=document.createElement("button");b.type="button";b.className="filter-btn";b.dataset.category=category;b.textContent=(icons[category]||"✳")+" "+category;$("filters").appendChild(b);
+ });
+}
+function makeCard(s){
+ const card=document.createElement("article");card.className="card";
+ const url="./story.html?id="+encodeURIComponent(s.id);
+ const photo=document.createElement("a");photo.className="photo";photo.href=url;photo.setAttribute("aria-label","Read "+s.title);
+ const src=imageURL(s.coverImage);
+ if(src){const img=document.createElement("img");img.src=src;img.alt=s.imageAlt||s.title;img.loading="lazy";img.onerror=()=>img.remove();photo.appendChild(img)}
+ const stamp=document.createElement("span");stamp.className="photo-stamp";stamp.textContent="PIXELHIVE MEDIA";photo.appendChild(stamp);
+ const body=document.createElement("div");body.className="body";
+ const category=document.createElement("div");category.className="category";category.textContent=(s.emoji?s.emoji+" ":"")+cat(s);
+ const h=document.createElement("h3");const a=document.createElement("a");a.href=url;a.textContent=s.title;h.appendChild(a);
+ const summary=document.createElement("p");summary.className="summary";summary.textContent=s.summary||"Explore this story from PixelHive Media.";
+ const meta=document.createElement("div");meta.className="meta";
+ const date=document.createElement("span");date.textContent=s.date||"From the Hive";
+ const read=document.createElement("a");read.className="read";read.href=url;read.textContent="Read story ↗";
+ meta.append(date,read);body.append(category,h,summary,meta);card.append(photo,body);return card;
+}
+function render(){
+ const stories=getStories();
+ if(stories===null){$("grid").innerHTML="";$("error").style.display="block";$("empty").style.display="none";$("count").textContent="Library unavailable";$("total").textContent="0";return}
+ $("error").style.display="none";
+ $("total").textContent=String(stories.length);
+ const sorted=stories.slice().sort((a,b)=>String(b.publishedAt||b.date||"").localeCompare(String(a.publishedAt||a.date||"")));
+ const results=sorted.filter(s=>{
+  const matchesCategory=selected==="all"||cat(s).toLowerCase()===selected.toLowerCase();
+  const text=[s.title,s.summary,s.category,s.type,s.id].join(" ").toLowerCase();
+  return matchesCategory&&text.includes(term.toLowerCase());
+ });
+ $("grid").innerHTML="";
+ results.forEach(s=>$("grid").appendChild(makeCard(s)));
+ $("count").textContent=results.length+" "+(results.length===1?"story":"stories")+" found";
+ $("heading").textContent=selected==="all"?"All Stories":selected;
+ $("empty").style.display=results.length?"none":"block";
+ document.querySelectorAll(".filter-btn").forEach(b=>{
+  const active=(b.dataset.category||"all").toLowerCase()===selected.toLowerCase();
+  b.classList.toggle("active",active);b.setAttribute("aria-pressed",String(active));
+ });
+}
+$("filters").addEventListener("click",e=>{
+ const button=e.target.closest(".filter-btn");if(!button)return;
+ selected=button.dataset.category||"all";render();
+});
+$("search").addEventListener("input",()=>{term=$("search").value.trim();render()});
+$("reset").addEventListener("click",()=>{selected="all";term="";$("search").value="";history.replaceState(null,"",location.pathname);render()});
+const stories=getStories();
+if(stories===null){$("error").style.display="block";$("count").textContent="Library unavailable"}
+else{
+ buildFilters(stories);
+ const requested=new URLSearchParams(location.search).get("category");
+ if(requested&&stories.some(s=>cat(s).toLowerCase()===requested.toLowerCase()))selected=stories.find(s=>cat(s).toLowerCase()===requested.toLowerCase()).category;
+ const query=new URLSearchParams(location.search).get("q");
+ if(query){term=query;$("search").value=query}
+ render();
+}
+})();
+</script>
+</body>
+</html>
