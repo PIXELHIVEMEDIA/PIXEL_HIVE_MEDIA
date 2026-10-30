@@ -1,182 +1,217 @@
 
 import json
 import re
-from datetime import datetime
+import sys
+import urllib.request
+import urllib.error
+import xml.etree.ElementTree as ET
+from datetime import datetime, timezone
 from pathlib import Path
-from urllib.parse import urlparse
+from email.utils import parsedate_to_datetime
 
-SOURCE = Path("approved-stories.json")
-OUTPUT = Path("scheduled-stories.js")
+OUTPUT_DIR = Path("pixelhive-research")
+JSON_FILE = OUTPUT_DIR / "review-queue.json"
+MD_FILE = OUTPUT_DIR / "review-queue.md"
+
+FEEDS = [
+    {
+        "name": "BBC Africa",
+        "url": "https://feeds.bbci.co.uk/news/world/africa/rss.xml",
+        "category": "Africa",
+    },
+    {
+        "name": "BBC World",
+        "url": "https://feeds.bbci.co.uk/news/world/rss.xml",
+        "category": "World",
+    },
+    {
+        "name": "BBC Technology",
+        "url": "https://feeds.bbci.co.uk/news/technology/rss.xml",
+        "category": "Technology",
+    },
+]
+
+SENSITIVE_TERMS = [
+    "election", "president", "politician", "parliament",
+    "government", "minister", "political", "campaign",
+    "war", "attack", "terror", "terrorist", "killed",
+    "death", "fatal", "injured", "rape", "sexual assault",
+    "child abuse", "suicide", "self-harm", "court ruling",
+    "arrested", "accused", "allegation", "corruption",
+    "fraud", "medical emergency", "disease outbreak",
+]
 
 
-def valid_http_url(value):
-    if not isinstance(value, str):
-        return False
-    try:
-        parsed = urlparse(value.strip())
-        return parsed.scheme in ("http", "https") and bool(parsed.netloc)
-    except ValueError:
-        return False
+def clean_text(value):
+    if not value:
+        return ""
+    return re.sub(r"\s+", " ", value).strip()
 
 
-def valid_timestamp(value):
-    if not isinstance(value, str):
-        return False
-    try:
-        datetime.fromisoformat(value.replace("Z", "+00:00"))
-        return True
-    except ValueError:
-        return False
+def get_text(element, names):
+    for name in names:
+        found = element.find(name)
+        if found is not None and found.text:
+            return clean_text(found.text)
+    return ""
 
 
-def valid_story_id(value):
-    return isinstance(value, str) and re.fullmatch(
-        r"[a-zA-Z0-9][a-zA-Z0-9_-]{2,99}", value
-    ) is not None
+def fetch_feed(feed):
+    request = urllib.request.Request(
+        feed["url"],
+        headers={"User-Agent": "PixelHiveMedia-NewsResearch/1.0"},
+    )
+
+    with urllib.request.urlopen(request, timeout=25) as response:
+        raw = response.read()
+
+    root = ET.fromstring(raw)
+    items = root.findall(".//item")
+
+    if not items:
+        # Support Atom feeds as well as RSS feeds.
+        items = root.findall(".//{http://www.w3.org/2005/Atom}entry")
+
+    results = []
+
+    for item in items[:35]:
+        title = get_text(item, ["title", "{http://www.w3.org/2005/Atom}title"])
+        link = get_text(item, ["link"])
+
+        if not link:
+            atom_link = item.find("{http://www.w3.org/2005/Atom}link")
+            if atom_link is not None:
+                link = atom_link.attrib.get("href", "")
+
+        summary = get_text(
+            item,
+            ["description", "summary",
+             "{http://www.w3.org/2005/Atom}summary"],
+        )
+
+        published = get_text(
+            item,
+            ["pubDate", "published", "updated",
+             "{http://www.w3.org/2005/Atom}published",
+             "{http://www.w3.org/2005/Atom}updated"],
+        )
+
+        if not title or not link.startswith(("https://", "http://")):
+            continue
+
+        text_to_check = (title + " " + summary).lower()
+        flags = [
+            term for term in SENSITIVE_TERMS
+            if term in text_to_check
+        ]
+
+        results.append({
+            "title": title,
+            "url": link,
+            "summary": summary[:1200],
+            "source": feed["name"],
+            "category": feed["category"],
+            "publishedAt": published,
+            "sensitiveTopicFlags": flags,
+            "editorialStatus": "review",
+            "verified": False,
+            "publicationStatus": "not_published",
+            "collectedAt": datetime.now(timezone.utc).isoformat(),
+        })
+
+    return results
 
 
 def main():
-    if not SOURCE.exists():
-        raise SystemExit(
-            "approved-stories.json was not found. No stories published."
-        )
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    try:
-        data = json.loads(SOURCE.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError) as exc:
-        raise SystemExit(f"Could not read approval file: {exc}")
+    collected = []
+    feed_errors = []
 
-    if data.get("status") != "approved":
-        raise SystemExit(
-            "The edition is not approved. No stories published."
-        )
+    for feed in FEEDS:
+        try:
+            entries = fetch_feed(feed)
+            collected.extend(entries)
+            print(f'{feed["name"]}: collected {len(entries)} leads')
+        except (urllib.error.URLError, TimeoutError, ET.ParseError,
+                OSError, ValueError) as error:
+            message = f'{feed["name"]}: {error}'
+            feed_errors.append(message)
+            print(f"WARNING: Could not read feed: {message}")
 
-    source_stories = data.get("stories", [])
-    if not isinstance(source_stories, list):
-        raise SystemExit("'stories' must be a JSON array.")
+    unique = []
+    seen_urls = set()
 
-    published = []
-    seen = set()
+    for entry in collected:
+        url = entry["url"].split("#", 1)[0].strip()
+        if url and url not in seen_urls:
+            seen_urls.add(url)
+            entry["url"] = url
+            unique.append(entry)
 
-    for story in source_stories:
-        if not isinstance(story, dict):
-            print("Held: story entry is not an object.")
-            continue
+    payload = {
+        "generatedAt": datetime.now(timezone.utc).isoformat(),
+        "purpose": "Research leads for human editorial review only",
+        "publicationEnabled": False,
+        "totalLeads": len(unique),
+        "feedErrors": feed_errors,
+        "stories": unique,
+    }
 
-        story_id = story.get("id", "unknown")
-
-        required = [
-            "id",
-            "title",
-            "category",
-            "summary",
-            "paragraphs",
-            "sourceUrl",
-            "editorialStatus",
-            "verifiedBy",
-            "verifiedAt",
-            "publishedAt",
-        ]
-
-        missing = [
-            field for field in required
-            if field not in story
-            or story[field] is None
-            or story[field] == ""
-        ]
-
-        if missing:
-            print(
-                f"Held for review: {story_id}; missing: "
-                + ", ".join(missing)
-            )
-            continue
-
-        if story["editorialStatus"] != "approved":
-            print(f"Held for review: {story_id}")
-            continue
-
-        if not valid_story_id(story["id"]):
-            print(f"Held: invalid story ID: {story_id}")
-            continue
-
-        if story["id"] in seen:
-            print(f"Skipped duplicate ID: {story_id}")
-            continue
-
-        for field in ("title", "category", "summary", "verifiedBy"):
-            if not isinstance(story[field], str) or not story[field].strip():
-                print(f"Held: invalid {field}: {story_id}")
-                break
-        else:
-            if not valid_http_url(story["sourceUrl"]):
-                print(f"Held: invalid source URL: {story_id}")
-                continue
-
-            if not valid_timestamp(story["verifiedAt"]):
-                print(f"Held: invalid verification timestamp: {story_id}")
-                continue
-
-            if not valid_timestamp(story["publishedAt"]):
-                print(f"Held: invalid publication timestamp: {story_id}")
-                continue
-
-            paragraphs = story["paragraphs"]
-            if (
-                not isinstance(paragraphs, list)
-                or not paragraphs
-                or not all(
-                    isinstance(p, str) and p.strip()
-                    for p in paragraphs
-                )
-            ):
-                print(f"Held: invalid article paragraphs: {story_id}")
-                continue
-
-            image = story.get("coverImage", "")
-            if image and not valid_http_url(image):
-                print(f"Held: invalid image URL: {story_id}")
-                continue
-
-            item = {
-                "id": story["id"],
-                "title": story["title"].strip(),
-                "category": story["category"].strip(),
-                "summary": story["summary"].strip(),
-                "paragraphs": paragraphs,
-                "sourceUrl": story["sourceUrl"].strip(),
-                "date": story.get(
-                    "date", story["publishedAt"][:10]
-                ),
-                "publishedAt": story["publishedAt"],
-                "type": story.get("type", "News"),
-                "emoji": story.get("emoji", "🐝"),
-                "coverImage": image,
-                "imageAlt": story.get(
-                    "imageAlt", story["title"]
-                ),
-                "editorNote": story.get("editorNote", ""),
-                "editorialStatus": "approved",
-            }
-
-            published.append(item)
-            seen.add(story["id"])
-
-    # The file appends approved stories to the existing library.
-    # index.html and story.html can continue using stories.js unchanged.
-    js = (
-        "\n/* Generated by PixelHive's approval workflow. */\n"
-        "window.PIXELHIVE_STORIES = "
-        "(Array.isArray(window.PIXELHIVE_STORIES) "
-        "? window.PIXELHIVE_STORIES : []).concat("
-        + json.dumps(published, ensure_ascii=False, indent=2)
-        + ");\n"
+    JSON_FILE.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
     )
 
-    OUTPUT.write_text(js, encoding="utf-8")
-    print(f"Approved stories added to generated file: {len(published)}")
-    print(f"Output: {OUTPUT}")
+    lines = [
+        "# PixelHive Media — Research Review Queue",
+        "",
+        f'Generated: {payload["generatedAt"]}',
+        f'Total unique leads: {len(unique)}',
+        "",
+        "**IMPORTANT:** These are research leads, not verified or published stories.",
+        "A human editor must verify claims, check context, and approve publication.",
+        "",
+    ]
+
+    for index, story in enumerate(unique, start=1):
+        lines.extend([
+            f'## {index}. {story["title"]}',
+            "",
+            f'- Category: {story["category"]}',
+            f'- Source: {story["source"]}',
+            f'- Published: {story["publishedAt"] or "Not provided"}',
+            f'- Review status: {story["editorialStatus"]}',
+            f'- Sensitive-topic flags: {", ".join(story["sensitiveTopicFlags"]) or "None detected"}',
+            f'- Source link: {story["url"]}',
+            "",
+            story["summary"] or "No summary supplied by the feed.",
+            "",
+            "---",
+            "",
+        ])
+
+    if feed_errors:
+        lines.extend(["## Feed warnings", ""])
+        lines.extend(f"- {error}" for error in feed_errors)
+
+    MD_FILE.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    print(f"Saved research queue: {JSON_FILE}")
+    print(f"Saved readable review list: {MD_FILE}")
+    print("No stories were published.")
+
+    if not unique:
+        print("WARNING: No leads collected. Check feed availability.")
+        # Do not fail the workflow just because an RSS feed is unavailable.
+        # The saved queue still records the errors.
+    else:
+        print(f"SUCCESS: {len(unique)} unique research leads are ready for review.")
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as error:
+        print(f"ERROR: Research collection failed: {error}", file=sys.stderr)
+        raise
