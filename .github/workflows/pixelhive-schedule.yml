@@ -1,8 +1,7 @@
-YAML
 
 name: PixelHive Daily Editions
 
-on:
+"on":
   schedule:
     # Kenya time (EAT, UTC+3)
     - cron: "7 2 * * *"
@@ -23,7 +22,7 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Set up Python
         uses: actions/setup-python@v6
