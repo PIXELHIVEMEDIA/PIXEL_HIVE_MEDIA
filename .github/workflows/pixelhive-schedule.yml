@@ -30,10 +30,15 @@ jobs:
           SCHEDULE: ${{ github.event.schedule }}
         run: python scripts/collect_news.py
 
-      - name: Save research queue
+      - name: Organize edition draft
+        env:
+          SCHEDULE: ${{ github.event.schedule }}
+        run: python scripts/organize_editions.py
+
+      - name: Save research queue and edition draft
         uses: actions/upload-artifact@v4
         with:
-          name: pixelhive-review-queue
+          name: pixelhive-edition-drafts
           path: pixelhive-research/
           if-no-files-found: error
           retention-days: 7
