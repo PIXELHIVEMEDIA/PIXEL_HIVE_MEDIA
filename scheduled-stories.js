@@ -1,0 +1,1 @@
+window.PIXELHIVE_SCHEDULED_STORIES = [];
