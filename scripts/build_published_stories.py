@@ -25,7 +25,10 @@ def valid_http_url(value):
         return False
     try:
         parsed = urlparse(value.strip())
-        return parsed.scheme in ("https", "http") and bool(parsed.netloc)
+        return (
+            parsed.scheme in ("https", "http")
+            and bool(parsed.netloc)
+        )
     except ValueError:
         return False
 
@@ -40,24 +43,27 @@ def story_is_sensitive(story):
     ]).lower()
 
     flags = story.get("sensitiveTopicFlags", [])
-    return (
-        (isinstance(flags, list) and len(flags) > 0)
-        or any(term in text for term in SENSITIVE_TERMS)
-    )
+    flagged = isinstance(flags, list) and len(flags) > 0
+
+    return flagged or any(term in text for term in SENSITIVE_TERMS)
 
 
 def valid_story(story):
     if not isinstance(story, dict):
         return False, "Story must be a JSON object"
 
-    for field in (
+    required_fields = (
         "id", "title", "summary", "category",
         "reviewer", "verifiedAt", "sourceUrl",
-    ):
+    )
+
+    for field in required_fields:
         if not nonempty(story.get(field)):
             return False, f"Missing required field: {field}"
 
-    if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", story["id"]):
+    if not re.fullmatch(
+        r"[a-z0-9]+(?:-[a-z0-9]+)*", story["id"]
+    ):
         return False, "Story ID must use lowercase letters, numbers and hyphens"
 
     if story.get("editorialStatus") != "approved":
@@ -73,18 +79,18 @@ def valid_story(story):
         return False, "A named reviewer is required"
 
     if not nonempty(story.get("verifiedAt")):
-        return False, "Verification timestamp is required"
+        return False, "A verification timestamp is required"
 
     paragraphs = story.get("paragraphs")
     if not isinstance(paragraphs, list) or not paragraphs:
         return False, "At least one article paragraph is required"
 
     if not all(nonempty(p) for p in paragraphs):
-        return False, "All article paragraphs must contain text"
+        return False, "Every article paragraph must contain text"
 
-    image_url = story.get("imageUrl", "")
-    if image_url and not valid_http_url(image_url):
-        return False, "Image URL must be a valid HTTP(S) URL"
+    image_url = story.get("coverImage") or story.get("imageUrl")
+    if not valid_http_url(image_url):
+        return False, "A valid, reviewed cover image URL is required"
 
     if story_is_sensitive(story):
         if story.get("additionalReview") is not True:
@@ -113,27 +119,40 @@ def main():
 
     approved = []
     rejected = []
+    seen_ids = set()
 
     if data.get("status") != "approved":
         print("Edition status is not approved. No stories published.")
     else:
-        seen_ids = set()
+        for original in stories:
+            ok, reason = valid_story(original)
 
-        for story in stories:
-            ok, reason = valid_story(story)
-
-            if ok and story["id"] in seen_ids:
+            if ok and original["id"] in seen_ids:
                 ok, reason = False, "Duplicate story ID"
 
-            if ok:
-                seen_ids.add(story["id"])
-                approved.append(story)
-            else:
+            if not ok:
                 title = (
-                    story.get("title", "(untitled)")
-                    if isinstance(story, dict) else "(invalid story)"
+                    original.get("title", "(untitled)")
+                    if isinstance(original, dict)
+                    else "(invalid story)"
                 )
                 rejected.append({"title": title, "reason": reason})
+                continue
+
+            story = dict(original)
+
+            # Existing website pages use coverImage.
+            # Accept imageUrl as an alternative input field.
+            story["coverImage"] = (
+                story.get("coverImage") or story.get("imageUrl")
+            )
+
+            # Give the existing website a safe default image description.
+            if not nonempty(story.get("imageAlt")):
+                story["imageAlt"] = story["title"]
+
+            seen_ids.add(story["id"])
+            approved.append(story)
 
     javascript = (
         "/* Generated automatically. Do not edit directly. */\n"
@@ -147,12 +166,12 @@ def main():
     print(f"Approved stories generated: {len(approved)}")
 
     if rejected:
-        print("Stories withheld:")
+        print("Stories withheld from the website:")
         for item in rejected:
             print(f'- {item["title"]}: {item["reason"]}')
 
     print(f"Generated {OUTPUT_FILE}")
-    print("Automated checks do not replace human fact-checking.")
+    print("Human fact-checking and image-rights checks are still required.")
 
 
 if __name__ == "__main__":
