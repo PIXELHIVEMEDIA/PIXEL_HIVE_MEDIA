@@ -3,17 +3,27 @@ name: PixelHive Daily Editions
 
 on:
   schedule:
-    # Kenya time: 5:07 AM, 1:07 PM, 7:07 PM
+    # Kenya time (EAT / UTC+3):
+    # Morning Signal: 5:07 AM
     - cron: "7 2 * * *"
+
+    # Midday Pulse: 1:07 PM
     - cron: "7 10 * * *"
+
+    # Evening Wrap: 7:07 PM
     - cron: "7 16 * * *"
+
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
+
+concurrency:
+  group: pixelhive-daily-editions
+  cancel-in-progress: false
 
 jobs:
-  collect-news-leads:
+  collect-and-prepare:
     runs-on: ubuntu-latest
 
     steps:
@@ -25,7 +35,7 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Collect and screen news leads
+      - name: Collect news research leads
         env:
           SCHEDULE: ${{ github.event.schedule }}
         run: python scripts/collect_news.py
@@ -35,10 +45,26 @@ jobs:
           SCHEDULE: ${{ github.event.schedule }}
         run: python scripts/organize_editions.py
 
-      - name: Save research queue and edition draft
+      - name: Build approved website stories
+        run: python scripts/build_published_stories.py
+
+      - name: Commit approved story data
+        run: |
+          git config user.name "PixelHive News Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add scheduled-stories.js
+
+          if git diff --cached --quiet; then
+            echo "No changes to approved story data."
+          else
+            git commit -m "Update approved PixelHive stories"
+            git push
+          fi
+
+      - name: Save research and edition drafts
         uses: actions/upload-artifact@v4
         with:
           name: pixelhive-edition-drafts
           path: pixelhive-research/
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 7
