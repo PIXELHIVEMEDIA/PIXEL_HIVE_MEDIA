@@ -1,19 +1,29 @@
 
 {
   "edition": "Morning Signal",
-  "date": "2026-10-29",
-  "status": "approved",
+  "date": "2026-10-30",
+  "status": "review",
   "stories": [
     {
       "id": "russia-africa-summit-moscow",
       "title": "Inside the Russia-Africa Summit in Moscow",
       "category": "World · Africa",
-      "summary": "Editorial test: BBC News has published a video report about the Russia-Africa summit in Moscow. Consult the original report for its full context. This entry has not been independently fact-checked by PixelHive.",
+      "summary": "Editorial test entry. BBC News has published a video report about the Russia-Africa summit in Moscow. Consult the original report for its full context. This entry has not been independently fact-checked by PixelHive.",
       "sourceUrl": "https://www.bbc.co.uk/news/videos/cj75pkypyw3zo?at_medium=RSS&at_campaign=rss",
       "paragraphs": [
         "This is a source-linked test entry for the PixelHive approval workflow.",
         "Editorial note: Source content and factual claims require verification before this is presented as fully verified reporting."
-      ]
+      ],
+      "editorialStatus": "review",
+      "verifiedBy": "",
+      "verifiedAt": "",
+      "publishedAt": "",
+      "date": "30 October 2026",
+      "type": "Editorial test",
+      "emoji": "🌍",
+      "coverImage": "",
+      "imageAlt": "No image supplied for this editorial test",
+      "editorNote": "Test entry only. Do not publish until a human editor verifies the report, independently checks the claims, writes original reporting, and confirms image rights."
     }
   ]
 }
