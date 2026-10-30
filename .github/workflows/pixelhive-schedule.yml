@@ -3,16 +3,10 @@ name: PixelHive Daily Editions
 
 on:
   schedule:
-    # Kenya time (EAT / UTC+3):
-    # Morning Signal: 5:07 AM
+    # Kenya time (EAT, UTC+3)
     - cron: "7 2 * * *"
-
-    # Midday Pulse: 1:07 PM
     - cron: "7 10 * * *"
-
-    # Evening Wrap: 7:07 PM
     - cron: "7 16 * * *"
-
   workflow_dispatch:
 
 permissions:
@@ -48,20 +42,20 @@ jobs:
       - name: Build approved website stories
         run: python scripts/build_published_stories.py
 
-      - name: Commit approved story data
+      - name: Commit generated story data
         run: |
           git config user.name "PixelHive News Bot"
           git config user.email "actions@users.noreply.github.com"
           git add scheduled-stories.js
 
           if git diff --cached --quiet; then
-            echo "No changes to approved story data."
+            echo "No generated story changes."
           else
-            git commit -m "Update approved PixelHive stories"
+            git commit -m "Update approved PixelHive story data"
             git push
           fi
 
-      - name: Save research and edition drafts
+      - name: Upload research and edition drafts
         uses: actions/upload-artifact@v4
         with:
           name: pixelhive-edition-drafts
