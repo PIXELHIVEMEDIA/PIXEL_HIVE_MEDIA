@@ -31,7 +31,8 @@ h1{font-size:clamp(2.2rem,6vw,4.2rem);line-height:1.08;letter-spacing:-1.6px;mar
 .cover figcaption{padding:9px 13px;color:var(--muted);font-size:.7rem;background:var(--panel)}
 .body{max-width:760px;margin:auto;font-size:1.04rem;color:#dce3dd;overflow-wrap:anywhere}
 .body p{margin-bottom:22px}
-.editor-note{max-width:760px;margin:30px auto;padding:17px 19px;border-left:3px solid var(--gold);background:var(--panel);border-radius:6px;color:var(--muted);font-size:.82rem}
+.editor-note{max-width:760px;margin:25px auto;padding:17px 19px;border-left:3px solid var(--gold);background:var(--panel);border-radius:6px;color:var(--muted);font-size:.82rem}
+.editor-note a{color:var(--mint);text-decoration:underline}
 .actions{display:flex;flex-wrap:wrap;gap:10px;margin:28px 0 40px}
 .btn{display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line);background:var(--panel);color:var(--white);padding:10px 14px;border-radius:7px;font-weight:800;font-size:.82rem}
 .btn:hover{border-color:var(--mint)}
@@ -52,59 +53,135 @@ footer strong{color:var(--white)}
 </head>
 <body>
 <div class="top-line"></div>
-<header><nav class="wrap nav"><a class="brand" href="./index.html">🐝 PIXEL<span>HIVE</span> MEDIA</a><div class="links"><a href="./index.html">Home</a><a href="./index.html#latest-stories">Latest Stories</a><a href="./all-stories.html">All Stories</a></div></nav></header>
-<main class="wrap"><a class="back" href="./all-stories.html">← Back to All Stories</a><div id="content"><div class="message"><h2>Loading your story…</h2><p>Connecting to the Hive library.</p></div></div></main>
-<footer><p><strong>🐝 PIXELHIVE MEDIA 🇰🇪</strong></p><p>© <span id="year"></span> PixelHive Media. Stories · Signals · Future.</p></footer>
+<header>
+<nav class="wrap nav">
+<a class="brand" href="./index.html">🐝 PIXEL<span>HIVE</span> MEDIA</a>
+<div class="links">
+<a href="./index.html">Home</a>
+<a href="./index.html#latest-stories">Latest Stories</a>
+<a href="./all-stories.html">All Stories</a>
+<a href="./daily-editions.html">Daily Editions</a>
+</div>
+</nav>
+</header>
+
+<main class="wrap">
+<a class="back" href="./all-stories.html">← Back to All Stories</a>
+<div id="content">
+<div class="message"><h2>Loading your story…</h2><p>Connecting to the Hive library.</p></div>
+</div>
+</main>
+
+<footer>
+<p><strong>🐝 PIXELHIVE MEDIA 🇰🇪</strong></p>
+<p>© <span id="year"></span> PixelHive Media. Stories · Signals · Future.</p>
+</footer>
+
 <script src="./stories.js"></script>
 <script src="./scheduled-stories.js"></script>
 <script>
 (function(){
 "use strict";
+
 const root=document.getElementById("content");
 document.getElementById("year").textContent=new Date().getFullYear();
-function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
-function safeURL(v){return typeof v==="string"&&/^(https?:\/\/|\.\/|\.\.\/|\/)/i.test(v.trim())?v.trim():""}
-function showError(title,detail){root.innerHTML='<div class="message"><h2>'+esc(title)+'</h2><p>'+esc(detail)+'</p><a class="btn btn-primary" href="./all-stories.html">Browse all stories ↗</a></div>'}
+
+function esc(v){
+return String(v==null?"":v).replace(/[&<>"']/g,c=>({
+"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+}[c]));
+}
+
+function safeURL(v){
+if(typeof v!=="string")return "";
+try{
+const u=new URL(v,location.href);
+if(["https:","http:"].includes(u.protocol))return u.href;
+if(v.startsWith("./")||v.startsWith("../")||v.startsWith("/"))return v;
+}catch(e){}
+return "";
+}
+
+function showError(title,detail){
+root.innerHTML='<div class="message"><h2>'+esc(title)+'</h2><p>'+esc(detail)+'</p><a class="btn btn-primary" href="./all-stories.html">Browse all stories ↗</a></div>';
+}
+
 const id=new URLSearchParams(location.search).get("id");
-const starterStories = Array.isArray(window.PIXELHIVE_STORIES)
-  ? window.PIXELHIVE_STORIES : [];
 
-const scheduledStories = Array.isArray(window.PIXELHIVE_SCHEDULED_STORIES)
-  ? window.PIXELHIVE_SCHEDULED_STORIES : [];
+const starter=Array.isArray(window.PIXELHIVE_STORIES)
+?window.PIXELHIVE_STORIES:[];
 
-const storyMap = new Map();
+const scheduled=Array.isArray(window.PIXELHIVE_SCHEDULED_STORIES)
+?window.PIXELHIVE_SCHEDULED_STORIES:[];
 
-[...starterStories, ...scheduledStories].forEach(story => {
-  if (story && story.id) storyMap.set(String(story.id), story);
+const storyMap=new Map();
+[...starter,...scheduled].forEach(item=>{
+if(item&&item.id)storyMap.set(String(item.id),item);
 });
+const stories=Array.from(storyMap.values());
 
-const stories = Array.from(storyMap.values());
-if(!id){showError("Choose a story 🐝","Open a story card from the homepage or All Stories.");return}
-if(!Array.isArray(stories)){showError("The Hive library could not load","Check that stories.js exists in the repository root.");return}
-const s=stories.find(item=>item&&String(item.id)===id);
-if(!s){showError("Story not found","This story ID is not in stories.js. Return to the library and choose another story.");return}
+if(!id){
+showError("Choose a story 🐝","Open a story card from the homepage or All Stories.");
+return;
+}
+
+const s=stories.find(item=>String(item.id)===id);
+if(!s){
+showError("Story not found","This story ID is not in the Hive library. Return to the library and choose another story.");
+return;
+}
+
 document.title=s.title+" | PixelHive Media";
 document.querySelector('meta[name="description"]').content=s.summary||s.title;
+
 const image=safeURL(s.coverImage);
 const paragraphs=Array.isArray(s.paragraphs)?s.paragraphs:[];
-const articleBody=paragraphs.map(p=>typeof p==="string"?"<p>"+esc(p)+"</p>":"").join("");
-const related=stories.filter(item=>item.id!==s.id&&item.category===s.category).slice(0,2);
+const articleBody=paragraphs
+.filter(p=>typeof p==="string"&&p.trim())
+.map(p=>"<p>"+esc(p)+"</p>").join("");
+
+const source=safeURL(s.sourceUrl);
+const related=stories
+.filter(item=>item.id!==s.id&&item.category===s.category)
+.slice(0,2);
+
 root.innerHTML=
 '<div class="category">'+esc((s.emoji?s.emoji+" ":"")+s.category)+'</div>'+
-'<article><h1>'+esc(s.title)+'</h1><p class="summary">'+esc(s.summary||"")+'</p>'+
+'<article>'+
+'<h1>'+esc(s.title)+'</h1>'+
+'<p class="summary">'+esc(s.summary||"")+'</p>'+
 '<div class="meta"><span>📅 '+esc(s.date||"")+'</span><span>🐝 PixelHive Media</span><span>📰 '+esc(s.type||"Story")+'</span></div>'+
-(image?'<figure class="cover"><img src="'+esc(image)+'" alt="'+esc(s.imageAlt||s.title)+'"><figcaption>📷 Illustrative editorial image. See the article for the story context.</figcaption></figure>':"")+
+(image?'<figure class="cover"><img src="'+esc(image)+'" alt="'+esc(s.imageAlt||s.title)+'"><figcaption>'+esc(s.imageCredit||"Illustrative image; see the source for story context.")+'</figcaption></figure>':"")+
 '<div class="body">'+articleBody+'</div>'+
+(source?'<aside class="editor-note"><strong>🔎 Further reading:</strong> <a href="'+esc(source)+'" target="_blank" rel="noopener noreferrer">Open the original source ↗</a></aside>':"")+
 (s.editorNote?'<aside class="editor-note"><strong>📝 Editorial note:</strong> '+esc(s.editorNote)+'</aside>':"")+
-'<div class="actions"><button class="btn btn-primary" id="share">Share story ↗</button><button class="btn" id="copy">Copy story link</button><a class="btn" href="./all-stories.html">Explore all stories</a></div></article>'+
+'<div class="actions"><button class="btn btn-primary" id="share">Share story ↗</button><button class="btn" id="copy">Copy story link</button><a class="btn" href="./all-stories.html">Explore all stories</a></div>'+
+'</article>'+
 (related.length?'<section class="related"><h2>More from this desk ✨</h2><div class="related-grid">'+related.map(item=>'<a class="related-card" href="./story.html?id='+encodeURIComponent(item.id)+'"><small>'+esc(item.emoji||"🐝")+' '+esc(item.category)+'</small><h3>'+esc(item.title)+'</h3><p>'+esc(item.summary||"Read more from PixelHive Media.")+'</p></a>').join("")+'</div></section>':"");
+
 document.getElementById("share").addEventListener("click",async()=>{
- try{if(navigator.share){await navigator.share({title:s.title,text:s.summary||s.title,url:location.href})}else{await navigator.clipboard.writeText(location.href);alert("Story link copied!")}}
- catch(e){if(e.name!=="AbortError")prompt("Copy your story link:",location.href)}
+try{
+if(navigator.share){
+await navigator.share({title:s.title,text:s.summary||s.title,url:location.href});
+}else if(navigator.clipboard){
+await navigator.clipboard.writeText(location.href);
+alert("Story link copied!");
+}else{
+prompt("Copy your story link:",location.href);
+}
+}catch(e){
+if(e.name!=="AbortError")prompt("Copy your story link:",location.href);
+}
 });
+
 document.getElementById("copy").addEventListener("click",async()=>{
- try{await navigator.clipboard.writeText(location.href);alert("Story link copied!")}
- catch(e){prompt("Copy your story link:",location.href)}
+try{
+if(!navigator.clipboard)throw new Error("Clipboard unavailable");
+await navigator.clipboard.writeText(location.href);
+alert("Story link copied!");
+}catch(e){
+prompt("Copy your story link:",location.href);
+}
 });
 })();
 </script>
