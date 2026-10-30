@@ -2,192 +2,454 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#080b0a">
-  <title>Approved Edition | PixelHive Media</title>
-  <style>
-    :root {
-      --black: #080b0a;
-      --surface: #111713;
-      --white: #f5f7f4;
-      --muted: #a8b2aa;
-      --red: #ef3340;
-      --green: #1fb56a;
-      --gold: #d9b76d;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      background: var(--black);
-      color: var(--white);
-      font-family: Arial, sans-serif;
-      line-height: 1.6;
-    }
-    header {
-      padding: 24px 18px;
-      border-bottom: 1px solid #29332b;
-      border-top: 4px solid var(--green);
-    }
-    .brand { font-weight: 800; font-size: 1.2rem; }
-    .brand span { color: var(--red); }
-    main { max-width: 850px; margin: auto; padding: 24px 16px; }
-    .edition {
-      color: var(--gold);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      font-size: .8rem;
-    }
-    h1 { line-height: 1.2; font-size: clamp(2rem, 7vw, 3rem); }
-    .muted { color: var(--muted); }
-    .story {
-      background: var(--surface);
-      border: 1px solid #29332b;
-      border-radius: 14px;
-      padding: 18px;
-      margin: 18px 0;
-    }
-    .story h2 { line-height: 1.3; }
-    .story img {
-      width: 100%;
-      max-height: 360px;
-      object-fit: cover;
-      border-radius: 10px;
-    }
-    a { color: #8de4ae; }
-    .status {
-      padding: 14px;
-      border-left: 4px solid var(--gold);
-      background: var(--surface);
-      border-radius: 6px;
-      overflow-wrap: anywhere;
-    }
-    footer {
-      border-top: 1px solid #29332b;
-      padding: 24px 16px;
-      color: var(--muted);
-      text-align: center;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#080b0a">
+<meta name="description" content="Read PixelHive Media's approved daily news editions: Morning Signal, Midday Pulse and Evening Wrap.">
+<title>Approved Edition | PixelHive Media</title>
+
+<style>
+:root{
+  --black:#080b0a;
+  --surface:#111713;
+  --surface2:#0d120f;
+  --white:#f5f7f4;
+  --muted:#a8b2aa;
+  --red:#ef3340;
+  --green:#1fb56a;
+  --mint:#70e7a7;
+  --gold:#d9b76d;
+  --line:rgba(255,255,255,.12)
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;
+  background:var(--black);
+  color:var(--white);
+  font-family:Arial,Helvetica,sans-serif;
+  line-height:1.7
+}
+a{color:var(--mint);text-decoration:none}
+a:hover{color:var(--gold)}
+a:focus-visible{
+  outline:2px solid var(--gold);
+  outline-offset:4px
+}
+.top-line{
+  height:4px;
+  background:linear-gradient(90deg,var(--black) 0 18%,var(--red) 18% 38%,var(--white) 38% 58%,var(--green) 58% 82%,var(--gold) 82%)
+}
+header{
+  border-bottom:1px solid var(--line);
+  background:rgba(8,11,10,.96)
+}
+.nav{
+  max-width:1000px;
+  margin:auto;
+  padding:17px 16px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:15px;
+  flex-wrap:wrap
+}
+.brand{font-weight:900;font-size:1.05rem;letter-spacing:.4px;color:var(--white)}
+.brand span{color:var(--red)}
+.nav-links{display:flex;gap:16px;flex-wrap:wrap;font-size:.82rem}
+.nav-links a{color:var(--muted)}
+.nav-links a:hover{color:var(--mint)}
+main{max-width:850px;margin:auto;padding:32px 16px 55px}
+.hero{
+  padding:24px 0 22px;
+  border-bottom:1px solid var(--line);
+  margin-bottom:22px
+}
+.edition-label{
+  color:var(--gold);
+  text-transform:uppercase;
+  letter-spacing:1.5px;
+  font-size:.75rem;
+  font-weight:900
+}
+h1{
+  line-height:1.15;
+  font-size:clamp(2rem,7vw,3.3rem);
+  margin:10px 0
+}
+.muted{color:var(--muted)}
+.hero p{max-width:680px}
+.edition-nav{
+  display:flex;
+  gap:9px;
+  flex-wrap:wrap;
+  margin-top:20px
+}
+.edition-nav a{
+  display:inline-block;
+  padding:9px 12px;
+  border:1px solid var(--line);
+  border-radius:7px;
+  background:var(--surface);
+  font-size:.8rem;
+  font-weight:800
+}
+.edition-nav a.selected{
+  border-color:var(--mint);
+  background:#122219
+}
+.status{
+  padding:14px 15px;
+  border-left:4px solid var(--gold);
+  background:var(--surface);
+  border-radius:6px;
+  overflow-wrap:anywhere;
+  font-size:.9rem
+}
+.status.success{border-left-color:var(--green)}
+.status.error{border-left-color:var(--red)}
+.story{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:13px;
+  padding:20px;
+  margin:18px 0
+}
+.story h2{line-height:1.3;margin:8px 0}
+.category{
+  color:var(--mint);
+  text-transform:uppercase;
+  letter-spacing:.8px;
+  font-size:.73rem;
+  font-weight:900
+}
+.story-summary{font-size:1.02rem}
+.story p{overflow-wrap:anywhere}
+.story-image{
+  width:100%;
+  max-height:360px;
+  object-fit:cover;
+  border-radius:9px;
+  margin:12px 0
+}
+.story-source{
+  display:inline-block;
+  margin-top:12px;
+  font-weight:900
+}
+.story-meta{
+  color:var(--muted);
+  font-size:.75rem;
+  margin-top:13px
+}
+.back-links{
+  display:flex;
+  gap:16px;
+  flex-wrap:wrap;
+  margin-top:30px;
+  font-size:.88rem
+}
+footer{
+  border-top:1px solid var(--line);
+  padding:23px 16px;
+  color:var(--muted);
+  text-align:center;
+  font-size:.78rem
+}
+footer strong{color:var(--white)}
+@media(max-width:600px){
+  .nav{align-items:flex-start}
+  .nav-links{gap:12px}
+  main{padding-top:22px}
+  .story{padding:16px}
+}
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+}
+</style>
 </head>
+
 <body>
-  <header>
-    <div class="brand">PIXEL<span>HIVE</span> MEDIA 🐝</div>
-    <div class="muted">Independent stories. Clear context.</div>
-  </header>
+<div class="top-line"></div>
 
-  <main>
-    <div class="edition">The Signal · Editorial desk</div>
-    <h1 id="edition-title">Approved Edition</h1>
-    <p id="edition-date" class="muted"></p>
-    <div id="message" class="status" role="status">
-      Checking the edition...
+<header>
+  <nav class="nav" aria-label="Main navigation">
+    <a class="brand" href="./index.html">🐝 PIXEL<span>HIVE</span> MEDIA</a>
+    <div class="nav-links">
+      <a href="./index.html">Home</a>
+      <a href="./daily-editions.html">Daily Editions</a>
+      <a href="./all-stories.html">All Stories</a>
     </div>
-    <section id="stories" aria-live="polite"></section>
-    <p><a href="./index.html">← Back to PixelHive Media</a></p>
-  </main>
+  </nav>
+</header>
 
-  <footer>
-    PixelHive Media · Verify information and consult original sources.
-  </footer>
+<main>
+  <section class="hero">
+    <div class="edition-label" id="edition-label">PIXELHIVE EDITORIAL DESK</div>
+    <h1 id="edition-title">Loading edition…</h1>
+    <p class="muted" id="edition-description">
+      Loading the selected edition.
+    </p>
+    <p class="muted" id="edition-date"></p>
 
-  <script>
-    async function loadEdition() {
-      const message = document.getElementById("message");
-      const list = document.getElementById("stories");
+    <nav class="edition-nav" aria-label="Choose a news edition">
+      <a id="link-morning" href="./approved-edition.html?edition=morning">
+        🌅 Morning Signal
+      </a>
+      <a id="link-midday" href="./approved-edition.html?edition=midday">
+        ☀️ Midday Pulse
+      </a>
+      <a id="link-evening" href="./approved-edition.html?edition=evening">
+        🌙 Evening Wrap
+      </a>
+    </nav>
+  </section>
 
-      try {
-        const response = await fetch(
-          "./approved-stories.json?updated=" + Date.now(),
-          { cache: "no-store" }
-        );
+  <div id="message" class="status" role="status" aria-live="polite">
+    Checking the selected edition…
+  </div>
 
-        if (!response.ok) throw new Error("Edition file unavailable");
+  <section id="stories" aria-label="Edition stories"></section>
 
-        const data = await response.json();
+  <div class="back-links">
+    <a href="./daily-editions.html">← Back to Daily Editions</a>
+    <a href="./index.html">Back to PixelHive Home ↗</a>
+  </div>
+</main>
 
-        document.getElementById("edition-title").textContent =
-          data.edition || "Approved Edition";
+<footer>
+  <strong>🐝 PIXELHIVE MEDIA 🇰🇪</strong>
+  <p>Stories · Signals · Future</p>
+  <p>Always consult original sources and check the context of a report.</p>
+</footer>
 
-        document.getElementById("edition-date").textContent =
-          data.date ? "Edition date: " + data.date : "";
+<script>
+(function(){
+  "use strict";
 
-        if (data.status !== "approved") {
-          message.textContent =
-            "No approved edition is currently available. Stories remain unpublished until an editor explicitly approves them.";
-          return;
-        }
+  const editions = {
+    morning: {
+      name: "The Morning Signal",
+      label: "🌅 5:00 AM EAT · MORNING EDITION",
+      description: "Your briefing on overnight developments and the stories to watch today.",
+      file: "./approved-stories.json",
+      link: "link-morning"
+    },
+    midday: {
+      name: "The Midday Pulse",
+      label: "☀️ 1:00 PM EAT · MIDDAY EDITION",
+      description: "Updates on developing stories and what matters right now.",
+      file: "./midday-stories.json",
+      link: "link-midday"
+    },
+    evening: {
+      name: "The Evening Wrap",
+      label: "🌙 7:00 PM EAT · EVENING EDITION",
+      description: "A recap of the day's major stories and what comes next.",
+      file: "./evening-stories.json",
+      link: "link-evening"
+    }
+  };
 
-        if (!Array.isArray(data.stories) || data.stories.length === 0) {
-          message.textContent =
-            "The edition is marked approved, but it contains no stories. Please correct the file before publishing.";
-          return;
-        }
+  const params = new URLSearchParams(window.location.search);
+  const requestedEdition = (params.get("edition") || "morning").toLowerCase();
+  const edition = editions[requestedEdition] ? requestedEdition : "morning";
+  const config = editions[edition];
 
-        const validStories = data.stories.filter(story =>
-          story &&
-          typeof story.title === "string" &&
-          typeof story.summary === "string" &&
-          typeof story.sourceUrl === "string" &&
-          /^https?:\/\//i.test(story.sourceUrl)
-        );
+  const title = document.getElementById("edition-title");
+  const label = document.getElementById("edition-label");
+  const description = document.getElementById("edition-description");
+  const date = document.getElementById("edition-date");
+  const message = document.getElementById("message");
+  const list = document.getElementById("stories");
 
-        if (validStories.length === 0) {
-          message.textContent =
-            "No valid stories were found. Check each story's title, summary and source link.";
-          return;
-        }
+  title.textContent = config.name;
+  label.textContent = config.label;
+  description.textContent = config.description;
+  document.title = config.name + " | PixelHive Media";
 
-        message.textContent =
-          "Editorial status: approved. " +
-          validStories.length + " story/stories available.";
+  document.getElementById(config.link).classList.add("selected");
 
-        validStories.forEach(story => {
-          const article = document.createElement("article");
-          article.className = "story";
+  function showMessage(text, type){
+    message.textContent = text;
+    message.className = "status" + (type ? " " + type : "");
+  }
 
-          const heading = document.createElement("h2");
-          heading.textContent = story.title;
-          article.appendChild(heading);
+  function safeHttpUrl(value){
+    if(typeof value !== "string") return null;
 
-          if (story.category) {
-            const category = document.createElement("p");
-            category.className = "edition";
-            category.textContent = story.category;
-            article.appendChild(category);
-          }
+    try{
+      const url = new URL(value);
+      if(url.protocol === "https:" || url.protocol === "http:"){
+        return url.href;
+      }
+    }catch(error){
+      return null;
+    }
 
-          const summary = document.createElement("p");
-          summary.textContent = story.summary;
-          article.appendChild(summary);
+    return null;
+  }
 
-          if (Array.isArray(story.paragraphs)) {
-            story.paragraphs.forEach(text => {
-              if (typeof text === "string") {
-                const paragraph = document.createElement("p");
-                paragraph.textContent = text;
-                article.appendChild(paragraph);
-              }
-            });
-          }
+  function addTextElement(parent, tag, text, className){
+    const element = document.createElement(tag);
+    element.textContent = text;
 
-          const source = document.createElement("a");
-          source.href = story.sourceUrl;
-          source.target = "_blank";
-          source.rel = "noopener noreferrer";
-          source.textContent = "Read the original source";
-          article.appendChild(source);
+    if(className){
+      element.className = className;
+    }
 
-          list.appendChild(article);
+    parent.appendChild(element);
+    return element;
+  }
+
+  function renderStory(story){
+    const article = document.createElement("article");
+    article.className = "story";
+
+    if(story.category){
+      addTextElement(article, "div", story.category, "category");
+    }
+
+    addTextElement(article, "h2", story.title);
+
+    addTextElement(
+      article,
+      "p",
+      story.summary,
+      "story-summary"
+    );
+
+    if(typeof story.imageUrl === "string"){
+      const imageUrl = safeHttpUrl(story.imageUrl);
+
+      if(imageUrl){
+        const image = document.createElement("img");
+        image.className = "story-image";
+        image.src = imageUrl;
+        image.alt = typeof story.imageAlt === "string"
+          ? story.imageAlt
+          : story.title;
+        image.loading = "lazy";
+        image.referrerPolicy = "no-referrer";
+        image.addEventListener("error", function(){
+          image.remove();
         });
-
-      } catch (error) {
-        message.textContent =
-          "The edition could not be loaded. Please try again later.";
+        article.appendChild(image);
       }
     }
 
-    loadEdition();
-  </script>
+    if(Array.isArray(story.paragraphs)){
+      story.paragraphs.forEach(function(text){
+        if(typeof text === "string" && text.trim()){
+          addTextElement(article, "p", text);
+        }
+      });
+    }
+
+    const sourceUrl = safeHttpUrl(story.sourceUrl);
+
+    if(sourceUrl){
+      const source = document.createElement("a");
+      source.className = "story-source";
+      source.href = sourceUrl;
+      source.target = "_blank";
+      source.rel = "noopener noreferrer";
+      source.textContent = "Read the original source ↗";
+      article.appendChild(source);
+    }
+
+    if(story.date){
+      addTextElement(article, "p", "Story date: " + story.date, "story-meta");
+    }
+
+    list.appendChild(article);
+  }
+
+  async function loadEdition(){
+    showMessage("Checking for approved stories…", "");
+
+    try{
+      const response = await fetch(
+        config.file + "?updated=" + Date.now(),
+        { cache: "no-store" }
+      );
+
+      if(!response.ok){
+        if(response.status === 404){
+          showMessage(
+            "No approved stories are available for this edition yet. The newsroom can add stories to its edition file once they have been reviewed and approved.",
+            ""
+          );
+          return;
+        }
+
+        throw new Error("Could not load the edition file.");
+      }
+
+      const data = await response.json();
+
+      if(!data || typeof data !== "object"){
+        showMessage("The edition file has an invalid format. Please check the JSON.", "error");
+        return;
+      }
+
+      if(data.status !== "approved"){
+        showMessage(
+          "No approved edition is currently available. Stories remain unpublished until an editor explicitly approves them.",
+          ""
+        );
+        return;
+      }
+
+      if(!Array.isArray(data.stories) || data.stories.length === 0){
+        showMessage(
+          "This edition is marked approved, but it contains no stories. Please review the edition file before publishing.",
+          "error"
+        );
+        return;
+      }
+
+      const validStories = data.stories.filter(function(story){
+        return story &&
+          typeof story.title === "string" &&
+          story.title.trim() &&
+          typeof story.summary === "string" &&
+          story.summary.trim() &&
+          safeHttpUrl(story.sourceUrl);
+      });
+
+      if(validStories.length === 0){
+        showMessage(
+          "No valid stories were found. Each story needs a title, summary and valid HTTP or HTTPS source link.",
+          "error"
+        );
+        return;
+      }
+
+      date.textContent = data.date
+        ? "Edition date: " + data.date
+        : "";
+
+      validStories.forEach(renderStory);
+
+      showMessage(
+        "Editorial status: approved. " +
+        validStories.length +
+        (validStories.length === 1 ? " story is" : " stories are") +
+        " available in this edition. Approval does not replace independent fact-checking.",
+        "success"
+      );
+
+    }catch(error){
+      showMessage(
+        "The edition could not be loaded. Check that the JSON file exists, is valid, and has been committed to GitHub. Please try again later.",
+        "error"
+      );
+    }
+  }
+
+  loadEdition();
+})();
+</script>
 </body>
 </html>
