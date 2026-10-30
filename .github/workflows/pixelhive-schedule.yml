@@ -3,6 +3,7 @@ name: PixelHive Daily Editions
 
 on:
   schedule:
+    # Kenya time: 5:07 AM, 1:07 PM, 7:07 PM
     - cron: "7 2 * * *"
     - cron: "7 10 * * *"
     - cron: "7 16 * * *"
@@ -14,198 +15,20 @@ permissions:
 jobs:
   collect-news-leads:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Collect worldwide news leads
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Collect and screen news leads
         env:
           SCHEDULE: ${{ github.event.schedule }}
-        run: |
-          cat > collect_news.py <<'PY'
-          import os
-          import re
-          import json
-          import urllib.request
-          import xml.etree.ElementTree as ET
-          from datetime import datetime, timezone, timedelta
-          from zoneinfo import ZoneInfo
-          from html import unescape
-          from difflib import SequenceMatcher
-
-          TZ = ZoneInfo("Africa/Nairobi")
-          now = datetime.now(timezone.utc).astimezone(TZ)
-          schedule = os.environ.get("SCHEDULE", "")
-
-          if schedule == "7 2 * * *":
-              edition = "Morning Signal"
-          elif schedule == "7 10 * * *":
-              edition = "The Midday Pulse"
-          elif schedule == "7 16 * * *":
-              edition = "The Evening Wrap"
-          elif 4 <= now.hour < 10:
-              edition = "Morning Signal (manual test)"
-          elif 10 <= now.hour < 16:
-              edition = "The Midday Pulse (manual test)"
-          else:
-              edition = "The Evening Wrap (manual test)"
-
-          # These feeds are research leads, not blanket
-          # permission to republish their content.
-          feeds = [
-              ("BBC Africa", "https://feeds.bbci.co.uk/news/world/africa/rss.xml"),
-              ("BBC World", "https://feeds.bbci.co.uk/news/world/rss.xml"),
-              ("BBC Technology", "https://feeds.bbci.co.uk/news/technology/rss.xml"),
-          ]
-
-          sensitive_terms = [
-              "killed", "dead", "death toll", "casualties",
-              "rape", "sexual assault", "suicide", "self-harm",
-              "terrorist", "terror attack", "hostage",
-              "coup", "election result", "fraud allegation",
-              "accused", "alleged", "court ruling",
-              "outbreak", "epidemic", "pandemic",
-              "earthquake victims", "breaking"
-          ]
-
-          def clean(value):
-              return " ".join(unescape(value or "").split())
-
-          def norm(value):
-              value = re.sub(r"https?://\S+", " ", value.lower())
-              return re.sub(r"[^a-z0-9 ]", " ", value)
-
-          def similar(a, b):
-              a, b = norm(a), norm(b)
-              return SequenceMatcher(None, a, b).ratio() >= 0.68
-
-          leads = []
-          errors = []
-
-          for source, url in feeds:
-              try:
-                  req = urllib.request.Request(
-                      url,
-                      headers={"User-Agent": "PixelHiveNewsResearch/1.0"}
-                  )
-                  with urllib.request.urlopen(req, timeout=20) as response:
-                      root = ET.fromstring(response.read())
-
-                  for item in root.findall(".//item")[:20]:
-                      title_node = item.find("title")
-                      link_node = item.find("link")
-                      date_node = item.find("pubDate")
-
-                      title = clean(title_node.text if title_node is not None else "")
-                      link = clean(link_node.text if link_node is not None else "")
-                      date_text = clean(date_node.text if date_node is not None else "")
-
-                      if title and link.startswith("https://"):
-                          leads.append({
-                              "title": title,
-                              "url": link,
-                              "source": source,
-                              "date": date_text
-                          })
-              except Exception as exc:
-                  errors.append(f"{source}: {type(exc).__name__}")
-
-          # Group similar headlines from different feeds.
-          groups = []
-          for lead in leads:
-              found = None
-              for group in groups:
-                  if any(
-                      other["source"] != lead["source"]
-                      and similar(other["title"], lead["title"])
-                      for other in group
-                  ):
-                      found = group
-                      break
-              if found:
-                  found.append(lead)
-              else:
-                  groups.append([lead])
-
-          review = []
-          candidates = []
-
-          for group in groups:
-              unique_sources = sorted({item["source"] for item in group})
-              title = group[0]["title"]
-              text = " ".join(item["title"] for item in group).lower()
-
-              reasons = []
-              if len(unique_sources) < 2:
-                  reasons.append("Not corroborated by another feed")
-              if any(term in text for term in sensitive_terms):
-                  reasons.append("Sensitive or high-risk topic")
-              if len(title) < 20:
-                  reasons.append("Headline too short for screening")
-
-              record = {
-                  "title": title,
-                  "sources": [
-                      {"name": item["source"], "url": item["url"]}
-                      for item in group
-                  ],
-                  "screening_notes": reasons or [
-                      "Cross-feed match only; independent verification required"
-                  ]
-              }
-
-              # No headline is automatically approved in this stage.
-              review.append(record)
-
-          os.makedirs("pixelhive-research", exist_ok=True)
-
-          report = {
-              "edition": edition,
-              "generated_at_eat": now.strftime("%Y-%m-%d %H:%M %Z"),
-              "status": "UNREVIEWED - NOT PUBLISHED",
-              "total_leads": len(leads),
-              "review_queue": review,
-              "feed_errors": errors,
-              "note": (
-                  "Feed matching is not fact-checking. Verify the original "
-                  "sources, publication rights, dates and material facts. "
-                  "Do not copy article text or media without permission."
-              )
-          }
-
-          with open(
-              "pixelhive-research/review-queue.json",
-              "w", encoding="utf-8"
-          ) as file:
-              json.dump(report, file, ensure_ascii=False, indent=2)
-
-          with open(
-              "pixelhive-research/review-queue.md",
-              "w", encoding="utf-8"
-          ) as file:
-              file.write(f"# PixelHive review queue\n\n")
-              file.write(f"- Edition: {edition}\n")
-              file.write(f"- Generated: {report['generated_at_eat']}\n")
-              file.write(f"- Leads collected: {len(leads)}\n")
-              file.write("- Status: UNREVIEWED — NOT PUBLISHED\n\n")
-
-              for item in review:
-                  file.write(f"## {item['title']}\n\n")
-                  for source in item["sources"]:
-                      file.write(
-                          f"- {source['name']}: {source['url']}\n"
-                      )
-                  for reason in item["screening_notes"]:
-                      file.write(f"- Check: {reason}\n")
-                  file.write("\n")
-
-              for error in errors:
-                  file.write(f"- Feed error: {error}\n")
-
-          print(f"Edition: {edition}")
-          print(f"Leads collected: {len(leads)}")
-          print(f"Review queue: {len(review)}")
-          print("Nothing was approved or published.")
-          PY
-
-          python collect_news.py
+        run: python scripts/collect_news.py
 
       - name: Save research queue
         uses: actions/upload-artifact@v4
