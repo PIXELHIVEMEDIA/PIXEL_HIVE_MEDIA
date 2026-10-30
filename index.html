@@ -466,7 +466,19 @@ function validImage(v){
 return typeof v==="string"&&/^(https?:\/\/|\.\/|\.\.\/|\/)/i.test(v.trim())?v.trim():"";
 }
 
-const stories=window.PIXELHIVE_STORIES;
+const starterStories = Array.isArray(window.PIXELHIVE_STORIES)
+  ? window.PIXELHIVE_STORIES : [];
+
+const scheduledStories = Array.isArray(window.PIXELHIVE_SCHEDULED_STORIES)
+  ? window.PIXELHIVE_SCHEDULED_STORIES : [];
+
+const storyMap = new Map();
+
+[...starterStories, ...scheduledStories].forEach(story => {
+  if (story && story.id) storyMap.set(String(story.id), story);
+});
+
+const stories = Array.from(storyMap.values());
 
 if(!Array.isArray(stories)){
 shelf.innerHTML='<div class="load-error">Stories could not load. Check that stories.js exists in the repository root.</div>';
