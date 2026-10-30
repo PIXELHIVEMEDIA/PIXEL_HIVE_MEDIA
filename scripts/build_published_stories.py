@@ -1,160 +1,148 @@
 
 import json
 import re
-from datetime import datetime
 from pathlib import Path
-from urllib.parse import urlparse
+from datetime import datetime, timezone
 
-SOURCE = Path("approved-stories.json")
-OUTPUT = Path("scheduled-stories.js")
+INPUT_FILE = Path("approved-stories.json")
+OUTPUT_FILE = Path("scheduled-stories.js")
+
+SENSITIVE_TERMS = {
+    "election", "president", "politician", "parliament",
+    "government", "minister", "war", "attack", "terror",
+    "killed", "death", "rape", "sexual assault", "suicide",
+    "child abuse", "corruption", "fraud", "accused",
+    "allegation", "arrested", "court ruling",
+}
+
+
+def nonempty(value):
+    return isinstance(value, str) and bool(value.strip())
 
 
 def valid_http_url(value):
-    if not isinstance(value, str):
-        return False
-    try:
-        parsed = urlparse(value.strip())
-        return parsed.scheme in ("http", "https") and bool(parsed.netloc)
-    except ValueError:
-        return False
-
-
-def valid_timestamp(value):
-    if not isinstance(value, str) or not value.strip():
-        return False
-    try:
-        datetime.fromisoformat(value.replace("Z", "+00:00"))
-        return True
-    except ValueError:
-        return False
-
-
-def valid_story_id(value):
     return (
-        isinstance(value, str)
-        and re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9_-]{2,99}", value)
-        is not None
+        nonempty(value)
+        and value.strip().startswith(("https://", "http://"))
     )
+
+
+def story_is_sensitive(story):
+    text = " ".join([
+        str(story.get("title", "")),
+        str(story.get("summary", "")),
+        " ".join(story.get("paragraphs", []))
+        if isinstance(story.get("paragraphs"), list) else "",
+        str(story.get("category", "")),
+    ]).lower()
+
+    flags = story.get("sensitiveTopicFlags", [])
+    return (
+        isinstance(flags, list) and len(flags) > 0
+    ) or any(term in text for term in SENSITIVE_TERMS)
+
+
+def valid_story(story):
+    if not isinstance(story, dict):
+        return False, "Story is not an object"
+
+    required_text = [
+        "id", "title", "summary", "category",
+        "reviewer", "verifiedAt", "sourceUrl",
+    ]
+
+    for field in required_text:
+        if not nonempty(story.get(field)):
+            return False, f"Missing required field: {field}"
+
+    if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", story["id"]):
+        return False, "Story ID must use lowercase letters, numbers and hyphens"
+
+    if story.get("editorialStatus") != "approved":
+        return False, "Story has not received explicit editorial approval"
+
+    if story.get("verified") is not True:
+        return False, "Story has not been marked verified"
+
+    if not valid_http_url(story.get("sourceUrl")):
+        return False, "A valid source URL is required"
+
+    if not nonempty(story.get("reviewer")):
+        return False, "A named reviewer is required"
+
+    if not nonempty(story.get("verifiedAt")):
+        return False, "A verification timestamp is required"
+
+    paragraphs = story.get("paragraphs")
+    if not isinstance(paragraphs, list) or not paragraphs:
+        return False, "Original article paragraphs are required"
+
+    if not all(nonempty(p) for p in paragraphs):
+        return False, "Every article paragraph must contain text"
+
+    if story_is_sensitive(story):
+        if story.get("additionalReview") is not True:
+            return False, "Sensitive story needs additional review"
+        if not nonempty(story.get("additionalReviewer")):
+            return False, "Sensitive story needs a second named reviewer"
+
+    return True, "Approved for website output"
 
 
 def main():
-    if not SOURCE.exists():
-        raise SystemExit("approved-stories.json was not found.")
+    if not INPUT_FILE.exists():
+        raise SystemExit(f"Missing required file: {INPUT_FILE}")
 
     try:
-        data = json.loads(SOURCE.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError) as exc:
-        raise SystemExit(f"Could not read approval file: {exc}")
+        data = json.loads(INPUT_FILE.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as error:
+        raise SystemExit(f"Invalid JSON in {INPUT_FILE}: {error}")
 
+    approved = []
+    rejected = []
+
+    edition_status = data.get("status")
     stories = data.get("stories", [])
+
     if not isinstance(stories, list):
-        raise SystemExit("'stories' must be a JSON array.")
+        raise SystemExit("'stories' must be a JSON array")
 
-    published = []
-    seen = set()
-
-    if data.get("status") == "approved":
-        for story in stories:
-            if not isinstance(story, dict):
-                print("Held: invalid story object.")
-                continue
-
-            story_id = story.get("id", "unknown")
-
-            required = [
-                "id", "title", "category", "summary", "paragraphs",
-                "sourceUrl", "editorialStatus", "verifiedBy",
-                "verifiedAt", "publishedAt"
-            ]
-            missing = [
-                key for key in required
-                if key not in story
-                or story[key] is None
-                or story[key] == ""
-            ]
-
-            if missing:
-                print(f"Held {story_id}: missing {', '.join(missing)}")
-                continue
-
-            if story["editorialStatus"] != "approved":
-                print(f"Held for editorial review: {story_id}")
-                continue
-
-            if not valid_story_id(story["id"]):
-                print(f"Held: invalid ID: {story_id}")
-                continue
-
-            if story["id"] in seen:
-                print(f"Skipped duplicate ID: {story_id}")
-                continue
-
-            if not all(
-                isinstance(story[key], str) and story[key].strip()
-                for key in ("title", "category", "summary", "verifiedBy")
-            ):
-                print(f"Held: empty or invalid text field: {story_id}")
-                continue
-
-            if not valid_http_url(story["sourceUrl"]):
-                print(f"Held: invalid source URL: {story_id}")
-                continue
-
-            if not valid_timestamp(story["verifiedAt"]):
-                print(f"Held: invalid verification timestamp: {story_id}")
-                continue
-
-            if not valid_timestamp(story["publishedAt"]):
-                print(f"Held: invalid publication timestamp: {story_id}")
-                continue
-
-            paragraphs = story["paragraphs"]
-            if (
-                not isinstance(paragraphs, list)
-                or not paragraphs
-                or not all(
-                    isinstance(p, str) and p.strip()
-                    for p in paragraphs
-                )
-            ):
-                print(f"Held: invalid paragraphs: {story_id}")
-                continue
-
-            image = story.get("coverImage", "")
-            if image and not valid_http_url(image):
-                print(f"Held: invalid image URL: {story_id}")
-                continue
-
-            published.append({
-                "id": story["id"],
-                "title": story["title"].strip(),
-                "category": story["category"].strip(),
-                "summary": story["summary"].strip(),
-                "paragraphs": paragraphs,
-                "sourceUrl": story["sourceUrl"].strip(),
-                "date": story.get("date", story["publishedAt"][:10]),
-                "publishedAt": story["publishedAt"],
-                "type": story.get("type", "News"),
-                "emoji": story.get("emoji", "🐝"),
-                "coverImage": image,
-                "imageAlt": story.get("imageAlt", story["title"]),
-                "imageCredit": story.get("imageCredit", ""),
-                "editorNote": story.get("editorNote", ""),
-                "editorialStatus": "approved"
-            })
-            seen.add(story["id"])
+    if edition_status != "approved":
+        print("Edition is not approved. No stories published.")
     else:
-        print("Edition is not approved. No stories will be published.")
+        for story in stories:
+            ok, reason = valid_story(story)
 
-    OUTPUT.write_text(
+            if ok:
+                approved.append(story)
+            else:
+                title = (
+                    story.get("title", "(untitled)")
+                    if isinstance(story, dict) else "(invalid story)"
+                )
+                rejected.append({
+                    "title": title,
+                    "reason": reason,
+                })
+
+    output = (
+        "/* Generated automatically. Do not edit this file directly. */\n"
         "window.PIXELHIVE_SCHEDULED_STORIES = "
-        + json.dumps(published, ensure_ascii=False, indent=2)
-        + ";\n",
-        encoding="utf-8"
+        + json.dumps(approved, ensure_ascii=False, indent=2)
+        + ";\n"
     )
 
-    print(f"Approved stories prepared: {len(published)}")
-    print(f"Generated file: {OUTPUT}")
+    OUTPUT_FILE.write_text(output, encoding="utf-8")
+
+    print(f"Approved stories generated: {len(approved)}")
+
+    if rejected:
+        print("Stories withheld from website:")
+        for item in rejected:
+            print(f'- {item["title"]}: {item["reason"]}')
+
+    print(f"Generated {OUTPUT_FILE}")
+    print("A generated output is not a substitute for editorial fact-checking.")
 
 
 if __name__ == "__main__":
