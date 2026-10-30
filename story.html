@@ -56,6 +56,7 @@ footer strong{color:var(--white)}
 <main class="wrap"><a class="back" href="./all-stories.html">← Back to All Stories</a><div id="content"><div class="message"><h2>Loading your story…</h2><p>Connecting to the Hive library.</p></div></div></main>
 <footer><p><strong>🐝 PIXELHIVE MEDIA 🇰🇪</strong></p><p>© <span id="year"></span> PixelHive Media. Stories · Signals · Future.</p></footer>
 <script src="./stories.js"></script>
+<script src="./scheduled-stories.js"></script>
 <script>
 (function(){
 "use strict";
@@ -65,7 +66,19 @@ function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;",
 function safeURL(v){return typeof v==="string"&&/^(https?:\/\/|\.\/|\.\.\/|\/)/i.test(v.trim())?v.trim():""}
 function showError(title,detail){root.innerHTML='<div class="message"><h2>'+esc(title)+'</h2><p>'+esc(detail)+'</p><a class="btn btn-primary" href="./all-stories.html">Browse all stories ↗</a></div>'}
 const id=new URLSearchParams(location.search).get("id");
-const stories=window.PIXELHIVE_STORIES;
+const starterStories = Array.isArray(window.PIXELHIVE_STORIES)
+  ? window.PIXELHIVE_STORIES : [];
+
+const scheduledStories = Array.isArray(window.PIXELHIVE_SCHEDULED_STORIES)
+  ? window.PIXELHIVE_SCHEDULED_STORIES : [];
+
+const storyMap = new Map();
+
+[...starterStories, ...scheduledStories].forEach(story => {
+  if (story && story.id) storyMap.set(String(story.id), story);
+});
+
+const stories = Array.from(storyMap.values());
 if(!id){showError("Choose a story 🐝","Open a story card from the homepage or All Stories.");return}
 if(!Array.isArray(stories)){showError("The Hive library could not load","Check that stories.js exists in the repository root.");return}
 const s=stories.find(item=>item&&String(item.id)===id);
