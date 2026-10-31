@@ -1,2 +1,27 @@
 /* Generated automatically. Do not edit directly. */
-window.PIXELHIVE_SCHEDULED_STORIES = [];
+window.PIXELHIVE_SCHEDULED_STORIES = [
+  {
+    "id": "video-game-remakes-nostalgia",
+    "title": "How Video Game Remakes Tap the Power of Nostalgia",
+    "category": "Technology · Gaming",
+    "summary": "Video game remakes bring familiar titles to new audiences while giving longtime players a chance to revisit memorable gaming experiences. The appeal of nostalgia raises an important question for game developers: how can a remake preserve what made an original special while making the experience feel fresh?",
+    "sourceUrl": "https://www.bbc.co.uk/news/articles/cm9qz428nnljo?at_medium=RSS&at_campaign=rss",
+    "paragraphs": [
+      "Nostalgia can be a powerful part of gaming. Familiar characters, worlds and gameplay can reconnect players with experiences they remember, while also introducing classic titles to people who missed their original releases.",
+      "A successful remake must balance familiarity with change. Updated visuals, sound and gameplay can make an older title more accessible, but developers also need to consider which elements made the original meaningful to its audience.",
+      "The interest in remakes highlights the relationship between gaming history and modern game development. Players may welcome improvements, but expectations can be high when a title already holds a special place in their memories.",
+      "This PixelHive Media article provides an original overview of the nostalgia theme. Readers should consult the BBC report linked below for the source report's full context and specific examples."
+    ],
+    "editorialStatus": "approved",
+    "verified": true,
+    "reviewer": "REPLACE_WITH_YOUR_FULL_NAME",
+    "verifiedAt": "2026-10-31T12:00:00+03:00",
+    "publishedAt": "2026-10-31T12:00:00+03:00",
+    "date": "31 October 2026",
+    "type": "Technology Feature",
+    "emoji": "🎮",
+    "coverImage": "https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=1200&q=85",
+    "imageAlt": "Gaming event stage with screens and lighting",
+    "editorNote": "Human editor must confirm the article's claims against the BBC report, check the original wording, replace the reviewer placeholder, and confirm that the cover image may be used. The cover image is illustrative and is not represented as a BBC image."
+  }
+];
